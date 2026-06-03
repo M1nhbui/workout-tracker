@@ -158,6 +158,15 @@ dmypy.json
 .pytype/
 
 # Cython debug symbols
+
+# Frontend
+node_modules/
+dist/
+
+# Local app data
+*.db
+*.sqlite
+*.sqlite3
 cython_debug/
 
 # PyCharm
