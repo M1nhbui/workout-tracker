@@ -4,6 +4,8 @@ A functional web app for tracking daily food calories, workout sessions, exercis
 
 The current product uses one all-purpose account type. Every user can log meals, create workout sessions, edit sets, browse exercises, and manage their own profile.
 
+**[Try the live demo](https://m1nhbui-workout-tracker.netlify.app)**
+
 ## Features
 
 - Free signup and login
