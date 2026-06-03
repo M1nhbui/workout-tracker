@@ -42,6 +42,7 @@ DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST/DBNAME?sslmode=require
 APP_SECRET=replace-with-a-long-random-secret
 FRONTEND_ORIGIN=https://temporary-placeholder.netlify.app
 OPENFOODFACTS_ENABLED=true
+PYTHON_VERSION=3.12.4
 ```
 
 5. Deploy and copy the Render backend URL.
