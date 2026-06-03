@@ -19,19 +19,26 @@ SEED_EXERCISES = [
     ("Crunch", "bodyweight", "strength", "beginner", 2.8, ["core"]),
     ("Calf Raise", "machine", "strength", "beginner", 3.2, ["calves"]),
     ("Treadmill Run", "machine", "cardio", "beginner", 8.0, ["cardio", "legs"]),
+    ("Stationary Bike", "machine", "cardio", "beginner", 7.0, ["cardio", "legs"]),
+    ("Rowing Machine", "machine", "cardio", "intermediate", 7.5, ["cardio", "back", "legs"]),
+    ("Elliptical", "machine", "cardio", "beginner", 5.0, ["cardio", "legs"]),
 ]
 
 
 def seed_reference_data(db: Session) -> None:
-    if db.query(MuscleGroup).first():
-        return
     groups = {}
+    existing_groups = {group.name: group for group in db.query(MuscleGroup).all()}
     for name in sorted({muscle for *_, muscles in SEED_EXERCISES for muscle in muscles}):
-        group = MuscleGroup(name=name)
-        db.add(group)
+        group = existing_groups.get(name)
+        if not group:
+            group = MuscleGroup(name=name)
+            db.add(group)
         groups[name] = group
     db.flush()
+    existing_exercises = {exercise.name for exercise in db.query(Exercise).all()}
     for name, equipment, category, difficulty, met, muscles in SEED_EXERCISES:
+        if name in existing_exercises:
+            continue
         exercise = Exercise(
             name=name,
             equipment=equipment,

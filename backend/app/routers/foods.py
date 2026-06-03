@@ -72,9 +72,26 @@ def create_food(payload: FoodCreate, user: User = Depends(current_user), db: Ses
     return food
 
 
+@router.get("/foods", response_model=list[FoodOut])
+def user_foods(user: User = Depends(current_user), db: Session = Depends(get_db)) -> list[Food]:
+    return db.query(Food).filter(Food.owner_id == user.id).order_by(Food.id.desc()).all()
+
+
 @router.get("/foods/favorites", response_model=list[FoodOut])
 def favorite_foods(user: User = Depends(current_user), db: Session = Depends(get_db)) -> list[Food]:
     return db.query(Food).filter(Food.owner_id == user.id, Food.is_favorite.is_(True)).all()
+
+
+@router.delete("/foods/{food_id}")
+def delete_food(food_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)) -> dict[str, str]:
+    food = db.get(Food, food_id)
+    if not food:
+        raise HTTPException(status_code=404, detail="Food not found")
+    if food.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only your custom foods can be removed")
+    db.delete(food)
+    db.commit()
+    return {"status": "deleted"}
 
 
 @router.post("/food-log", response_model=FoodLogOut)

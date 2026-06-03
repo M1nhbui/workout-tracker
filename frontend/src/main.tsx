@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Activity, Dumbbell, LogOut, Plus, Search, UserRound, Utensils } from "lucide-react";
+import { Activity, Dumbbell, LogOut, Plus, Save, Search, Trash2, UserRound, Utensils } from "lucide-react";
 import "./styles.css";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -10,9 +10,13 @@ const text = {
   en: {
     appName: "Gym Tracker",
     today: "Today",
+    todaySubtitle: "Food, training, and calorie balance",
     workout: "Workout",
+    workoutSubtitle: "Sessions, activity types, and calories out",
     exercises: "Exercises",
+    exercisesSubtitle: "Browse movements by muscle group",
     profile: "Profile",
+    profileSubtitle: "Body metrics and calorie target",
     signOut: "Sign out",
     createAccount: "Create account",
     login: "Log in",
@@ -76,6 +80,24 @@ const text = {
     goal: "Goal",
     dailyCalorieTarget: "Daily calorie target, kcal",
     saveProfile: "Save profile",
+    author: "Built by Minh Bui",
+    setupPrompt: "Complete your profile so calorie targets and workout estimates work correctly.",
+    targetMode: "Calorie target",
+    manualTarget: "Manual target",
+    autoTarget: "Auto calculate",
+    useAutoTarget: "Use auto target",
+    targetError: "Enter a positive daily calorie target or provide sex, age, height, and weight for auto calculation.",
+    activityType: "Activity type",
+    strength: "Strength",
+    cardio: "Cardio",
+    customActivity: "Custom activity",
+    customActivityName: "Activity name",
+    customActivityHint: "Use this when your watch, machine, or another app already tells you calories burned.",
+    caloriesBurned: "Calories burned",
+    noMealsLogged: "No meals logged yet.",
+    noMealsHint: "Start with a quick calorie entry or search a food.",
+    noSessions: "No workout sessions yet.",
+    noSessionsHint: "Start a workout to begin tracking sets or activities.",
     language: "Tiếng Việt",
     breakfast: "breakfast",
     lunch: "lunch",
@@ -88,9 +110,13 @@ const text = {
   vi: {
     appName: "Theo Dõi Gym",
     today: "Hôm nay",
+    todaySubtitle: "Món ăn, tập luyện và cân bằng calo",
     workout: "Tập luyện",
+    workoutSubtitle: "Buổi tập, loại hoạt động và calo tiêu hao",
     exercises: "Bài tập",
+    exercisesSubtitle: "Tìm bài tập theo nhóm cơ",
     profile: "Hồ sơ",
+    profileSubtitle: "Thông tin cơ thể và mục tiêu calo",
     signOut: "Đăng xuất",
     createAccount: "Tạo tài khoản",
     login: "Đăng nhập",
@@ -154,6 +180,24 @@ const text = {
     goal: "Mục tiêu",
     dailyCalorieTarget: "Mục tiêu calo mỗi ngày, kcal",
     saveProfile: "Lưu hồ sơ",
+    author: "Phát triển bởi Minh Bui",
+    setupPrompt: "Hoàn thành hồ sơ để mục tiêu calo và ước tính tập luyện hoạt động chính xác.",
+    targetMode: "Mục tiêu calo",
+    manualTarget: "Nhập thủ công",
+    autoTarget: "Tự tính",
+    useAutoTarget: "Dùng mục tiêu tự tính",
+    targetError: "Nhập mục tiêu calo dương hoặc cung cấp giới tính, tuổi, chiều cao và cân nặng để tự tính.",
+    activityType: "Loại hoạt động",
+    strength: "Tập tạ",
+    cardio: "Cardio",
+    customActivity: "Hoạt động tự nhập",
+    customActivityName: "Tên hoạt động",
+    customActivityHint: "Dùng mục này khi đồng hồ, máy tập hoặc app khác đã cho bạn biết calo tiêu hao.",
+    caloriesBurned: "Calo đã tiêu hao",
+    noMealsLogged: "Chưa ghi món ăn nào.",
+    noMealsHint: "Bắt đầu bằng cách nhập calo nhanh hoặc tìm món ăn.",
+    noSessions: "Chưa có buổi tập nào.",
+    noSessionsHint: "Bắt đầu một buổi tập để ghi set hoặc hoạt động.",
     language: "English",
     breakfast: "bữa sáng",
     lunch: "bữa trưa",
@@ -228,16 +272,31 @@ type WorkoutRecord = {
 
 type WorkoutSetRecord = {
   id: number;
-  exercise_id: number;
+  exercise_id?: number;
   exercise_name: string;
+  activity_type: string;
+  activity_name?: string;
   reps?: number;
   weight_kg?: number;
   duration_sec?: number;
+  manual_calories?: number;
   computed_burn_kcal: number;
 };
 
 function today() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function toNumber(value: string) {
+  return value === "" ? undefined : Number(value);
+}
+
+function hasAutoTargetInputs(user: User) {
+  return Boolean(user.sex && user.age && user.height_cm && user.weight_kg);
+}
+
+function needsProfileSetup(user: User) {
+  return !user.daily_calorie_target && !hasAutoTargetInputs(user);
 }
 
 function App() {
@@ -281,6 +340,12 @@ function App() {
     });
   }, [api, token]);
 
+  useEffect(() => {
+    if (user && needsProfileSetup(user)) {
+      setTab("profile");
+    }
+  }, [user]);
+
   function saveAuth(nextToken: string, nextUser: User) {
     localStorage.setItem("gym_token", nextToken);
     setToken(nextToken);
@@ -294,7 +359,8 @@ function App() {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div>
+        <div className="brand-block">
+          <span className="brand-mark">GT</span>
           <h1>{copy.appName}</h1>
           <p>{user.display_name}</p>
         </div>
@@ -308,10 +374,12 @@ function App() {
         <button className="ghost" onClick={() => { localStorage.removeItem("gym_token"); setToken(""); setUser(null); }}><LogOut size={18} /> {copy.signOut}</button>
       </aside>
       <main>
+        {needsProfileSetup(user) && <div className="notice">{copy.setupPrompt}</div>}
         {tab === "today" && <Today api={api} user={user} copy={copy} />}
         {tab === "workout" && <Workout api={api} user={user} copy={copy} />}
         {tab === "exercises" && <ExerciseBrowser api={api} copy={copy} />}
         {tab === "profile" && <Profile api={api} user={user} setUser={setUser} copy={copy} />}
+        <p className="page-author">{copy.author}</p>
       </main>
     </div>
   );
@@ -361,8 +429,8 @@ function Today({ api, user, copy }: { api: <T>(path: string, options?: RequestIn
   const [workouts, setWorkouts] = useState<WorkoutRecord[]>([]);
   const [foods, setFoods] = useState<Food[]>([]);
   const [q, setQ] = useState("");
-  const [entry, setEntry] = useState({ meal_type: "breakfast", food_name: "", manual_calories: 0 });
-  const [customFood, setCustomFood] = useState({ name: "", brand: "", serving_grams: 100, calories_per_100g: 0, is_favorite: true });
+  const [entry, setEntry] = useState({ meal_type: "breakfast", food_name: "", manual_calories: "" });
+  const [customFood, setCustomFood] = useState({ name: "", brand: "", serving_grams: "100", calories_per_100g: "", is_favorite: true });
 
   async function refresh() {
     const [nextLog, nextWorkouts] = await Promise.all([
@@ -372,7 +440,13 @@ function Today({ api, user, copy }: { api: <T>(path: string, options?: RequestIn
     setLog(nextLog);
     setWorkouts(nextWorkouts);
   }
-  useEffect(() => { refresh(); }, [date]);
+  async function loadSavedFoods() {
+    setFoods(await api<Food[]>("/foods"));
+  }
+  useEffect(() => {
+    refresh();
+    loadSavedFoods();
+  }, [date]);
 
   async function search() {
     setFoods(await api(`/foods/search?q=${encodeURIComponent(q)}`));
@@ -380,14 +454,19 @@ function Today({ api, user, copy }: { api: <T>(path: string, options?: RequestIn
 
   async function addManual(event: React.FormEvent) {
     event.preventDefault();
-    await api("/food-log", { method: "POST", body: JSON.stringify({ ...entry, date }) });
-    setEntry({ ...entry, food_name: "", manual_calories: 0 });
+    await api("/food-log", { method: "POST", body: JSON.stringify({ ...entry, manual_calories: toNumber(entry.manual_calories), date }) });
+    setEntry({ ...entry, food_name: "", manual_calories: "" });
     refresh();
   }
 
   async function addFromFood(food: Food) {
     await api("/food-log", { method: "POST", body: JSON.stringify({ date, meal_type: entry.meal_type, food_name: food.name, manual_calories: food.calories_per_100g }) });
     refresh();
+  }
+
+  async function removeFood(foodId: number) {
+    await api(`/foods/${foodId}`, { method: "DELETE" });
+    setFoods(foods.filter((food) => food.id !== foodId));
   }
 
   async function removeEntry(entryId: number) {
@@ -402,8 +481,8 @@ function Today({ api, user, copy }: { api: <T>(path: string, options?: RequestIn
       body: JSON.stringify({
         name: customFood.name,
         brand: customFood.brand || null,
-        serving_sizes: [{ label: `${customFood.serving_grams} g`, grams: customFood.serving_grams }],
-        calories_per_100g: customFood.calories_per_100g,
+        serving_sizes: [{ label: `${customFood.serving_grams || 100} g`, grams: toNumber(customFood.serving_grams) ?? 100 }],
+        calories_per_100g: toNumber(customFood.calories_per_100g) ?? 0,
         protein_per_100g: 0,
         carbs_per_100g: 0,
         fat_per_100g: 0,
@@ -411,12 +490,18 @@ function Today({ api, user, copy }: { api: <T>(path: string, options?: RequestIn
       })
     });
     setFoods([saved, ...foods]);
-    setCustomFood({ name: "", brand: "", serving_grams: 100, calories_per_100g: 0, is_favorite: true });
+    setCustomFood({ name: "", brand: "", serving_grams: "100", calories_per_100g: "", is_favorite: true });
   }
 
   return (
     <section>
-      <header className="page-head"><h2>{copy.today}</h2><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></header>
+      <header className="page-head">
+        <div>
+          <h2>{copy.today}</h2>
+          <p>{copy.todaySubtitle}</p>
+        </div>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </header>
       <CalorieSummary user={user} caloriesIn={log.totals.calories ?? 0} caloriesOut={workoutCaloriesOut(workouts)} copy={copy} />
       <div className="grid">
         <form className="panel" onSubmit={addManual}>
@@ -434,7 +519,7 @@ function Today({ api, user, copy }: { api: <T>(path: string, options?: RequestIn
           </label>
           <label>
             {copy.totalCaloriesMeal}
-            <input type="number" placeholder="Example: 650" value={entry.manual_calories} onChange={(e) => setEntry({ ...entry, manual_calories: Number(e.target.value) })} />
+            <input type="number" placeholder="Example: 650" value={entry.manual_calories} onChange={(e) => setEntry({ ...entry, manual_calories: e.target.value })} />
           </label>
           <button><Plus size={18} /> {copy.addEntry}</button>
         </form>
@@ -442,8 +527,18 @@ function Today({ api, user, copy }: { api: <T>(path: string, options?: RequestIn
           <h3>{copy.foodSearch}</h3>
           <p className="hint">{copy.foodSearchHint}</p>
           <div className="row"><input placeholder={copy.searchFoods} value={q} onChange={(e) => setQ(e.target.value)} /><button onClick={search}><Search size={18} /></button></div>
-          <div className="list">
-            {foods.map((food, index) => <button className="list-item" key={`${food.name}-${index}`} onClick={() => addFromFood(food)}>{food.name}<span>{Math.round(food.calories_per_100g)} kcal / 100g</span></button>)}
+          <div className="list scroll-list">
+            {foods.map((food, index) => (
+              <div className="list-item saved-food-row" key={`${food.id}-${food.name}-${index}`}>
+                <button className="food-log-button" onClick={() => addFromFood(food)}>
+                  {food.name}
+                  <span>{Math.round(food.calories_per_100g)} kcal / 100g</span>
+                </button>
+                {food.source === "custom" && food.id > 0 && (
+                  <button className="danger icon-button" aria-label={copy.remove} title={copy.remove} onClick={() => removeFood(food.id)}><Trash2 size={16} /></button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -463,11 +558,11 @@ function Today({ api, user, copy }: { api: <T>(path: string, options?: RequestIn
         <div className="five">
           <label>
             {copy.usualServing}
-            <input type="number" placeholder="100" value={customFood.serving_grams} onChange={(e) => setCustomFood({ ...customFood, serving_grams: Number(e.target.value) })} />
+            <input type="number" placeholder="100" value={customFood.serving_grams} onChange={(e) => setCustomFood({ ...customFood, serving_grams: e.target.value })} />
           </label>
           <label>
             {copy.calories100g}
-            <input type="number" placeholder="180" value={customFood.calories_per_100g} onChange={(e) => setCustomFood({ ...customFood, calories_per_100g: Number(e.target.value) })} />
+            <input type="number" placeholder="180" value={customFood.calories_per_100g} onChange={(e) => setCustomFood({ ...customFood, calories_per_100g: e.target.value })} />
           </label>
         </div>
         <label className="inline-check"><input type="checkbox" checked={customFood.is_favorite} onChange={(e) => setCustomFood({ ...customFood, is_favorite: e.target.checked })} /> {copy.favorite}</label>
@@ -475,18 +570,22 @@ function Today({ api, user, copy }: { api: <T>(path: string, options?: RequestIn
       </form>
       <div className="panel">
         <h3>{copy.loggedMeals}</h3>
-        <div className="list">
-          {log.entries.map((item) => (
+        {log.entries.length === 0 ? (
+          <EmptyState title={copy.noMealsLogged} body={copy.noMealsHint} />
+        ) : (
+          <div className="list">
+            {log.entries.map((item) => (
             <div className="list-item" key={item.id}>
               <span className="meal-name">
                 {item.food_name}
                 <small>{copy[item.meal_type as keyof Copy] || item.meal_type}</small>
               </span>
               <span>{item.computed_calories} kcal</span>
-              <button className="danger small" onClick={() => removeEntry(item.id)}>{copy.remove}</button>
+              <button className="danger icon-button" aria-label={copy.remove} title={copy.remove} onClick={() => removeEntry(item.id)}><Trash2 size={16} /></button>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
@@ -499,18 +598,23 @@ function workoutCaloriesOut(workouts: WorkoutRecord[]) {
 function CalorieSummary({ user, caloriesIn, caloriesOut, copy }: { user: User; caloriesIn: number; caloriesOut: number; copy: Copy }) {
   const target = user.daily_calorie_target ?? user.tdee ?? 0;
   const remaining = target ? target - caloriesIn + caloriesOut : 0;
+  const progress = target ? Math.min(Math.max((caloriesIn / target) * 100, 0), 100) : 0;
   return (
     <div className="metrics">
-      <Metric label={copy.dailyTarget} value={target} />
-      <Metric label={copy.caloriesIn} value={caloriesIn} />
-      <Metric label={copy.caloriesOut} value={caloriesOut} />
-      <Metric label={copy.remaining} value={remaining} />
+      <Metric tone="target" label={copy.dailyTarget} value={target} />
+      <Metric tone="in" label={copy.caloriesIn} value={caloriesIn} progress={progress} />
+      <Metric tone="out" label={copy.caloriesOut} value={caloriesOut} />
+      <Metric tone="remaining" label={copy.remaining} value={remaining} />
     </div>
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
-  return <div className="metric"><span>{label}</span><strong>{Math.round(value)}</strong><small>kcal</small></div>;
+function Metric({ label, value, tone, progress }: { label: string; value: number; tone: string; progress?: number }) {
+  return <div className={`metric metric-${tone}`}><span>{label}</span><strong>{Math.round(value)}</strong><small>kcal</small>{progress !== undefined && <div className="metric-bar"><i style={{ width: `${progress}%` }} /></div>}</div>;
+}
+
+function EmptyState({ title, body }: { title: string; body: string }) {
+  return <div className="empty-state"><strong>{title}</strong><p>{body}</p></div>;
 }
 
 function ExerciseBrowser({ api, copy }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; copy: Copy }) {
@@ -523,7 +627,7 @@ function ExerciseBrowser({ api, copy }: { api: <T>(path: string, options?: Reque
     setSelected(next);
     setExercises(await api(`/exercises${next.length ? `?muscles=${next.join(",")}` : ""}`));
   }
-  return <section><header className="page-head"><h2>{copy.exerciseBrowser}</h2></header><div className="chips">{groups.map((group) => <button className={selected.includes(group.name) ? "chip selected" : "chip"} onClick={() => toggle(group.name)} key={group.id}>{group.name}</button>)}</div><div className="cards">{exercises.map((exercise) => <article className="panel" key={exercise.id}><h3>{exercise.name}</h3><p>{exercise.equipment} · {exercise.difficulty} · MET {exercise.met}</p><small>{exercise.muscles.join(", ")}</small></article>)}</div>{exercises.length === 0 && <p className="empty">{copy.noExercises}</p>}</section>;
+  return <section><header className="page-head"><div><h2>{copy.exerciseBrowser}</h2><p>{copy.exercisesSubtitle}</p></div></header><div className="chips">{groups.map((group) => <button className={selected.includes(group.name) ? "chip selected" : "chip"} onClick={() => toggle(group.name)} key={group.id}>{group.name}</button>)}</div><div className="cards">{exercises.map((exercise) => <article className="panel exercise-card" key={exercise.id}><h3>{exercise.name}</h3><p>{exercise.equipment} · {exercise.difficulty} · MET {exercise.met}</p><small>{exercise.muscles.join(", ")}</small></article>)}</div>{exercises.length === 0 && <EmptyState title={copy.noExercises} body={copy.exercisesSubtitle} />}</section>;
 }
 
 function Workout({ api, user, copy }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; user: User; copy: Copy }) {
@@ -533,9 +637,10 @@ function Workout({ api, user, copy }: { api: <T>(path: string, options?: Request
   const [log, setLog] = useState<{ entries: FoodEntry[]; totals: Record<string, number> }>({ entries: [], totals: {} });
   const [activeId, setActiveId] = useState<number | null>(null);
   const [sessionName, setSessionName] = useState("");
-  const [setForm, setSetForm] = useState({ exercise_id: 1, reps: 10, weight_kg: 0, duration_sec: 180 });
-  const [editSets, setEditSets] = useState<Record<number, { exercise_id: number; reps: number; weight_kg: number; duration_sec: number }>>({});
+  const [setForm, setSetForm] = useState({ activity_type: "strength", exercise_id: "", activity_name: "", reps: "", weight_kg: "", duration_sec: "180", manual_calories: "" });
+  const [editSets, setEditSets] = useState<Record<number, { activity_type: string; exercise_id: string; activity_name: string; reps: string; weight_kg: string; duration_sec: string; manual_calories: string }>>({});
   const activeWorkout = workouts.find((workout) => workout.id === activeId) ?? null;
+  const selectableExercises = exercises.filter((exercise) => setForm.activity_type === "cardio" ? exercise.category === "cardio" : exercise.category !== "cardio");
 
   async function refresh() {
     const [nextWorkouts, nextLog] = await Promise.all([
@@ -554,7 +659,7 @@ function Workout({ api, user, copy }: { api: <T>(path: string, options?: Request
     }
     setLog(nextLog);
   }
-  useEffect(() => { api<Exercise[]>("/exercises").then((items) => { setExercises(items); if (items[0]) setSetForm((s) => ({ ...s, exercise_id: items[0].id })); }); refresh(); }, [date]);
+  useEffect(() => { api<Exercise[]>("/exercises").then((items) => { setExercises(items); if (items[0]) setSetForm((s) => ({ ...s, exercise_id: String(items[0].id) })); }); refresh(); }, [date]);
   async function createWorkout() {
     const workout = await api<WorkoutRecord>("/workouts", { method: "POST", body: JSON.stringify({ date, status: "in_progress", notes: "Workout session" }) });
     setActiveId(workout.id);
@@ -578,10 +683,37 @@ function Workout({ api, user, copy }: { api: <T>(path: string, options?: Request
     setSessionName("");
     refresh();
   }
-  async function addSet(event: React.FormEvent) { event.preventDefault(); if (!activeId) return; await api(`/workouts/${activeId}/sets`, { method: "POST", body: JSON.stringify(setForm) }); refresh(); }
+  async function addSet(event: React.FormEvent) {
+    event.preventDefault();
+    if (!activeId) return;
+    const payload = {
+      activity_type: setForm.activity_type,
+      exercise_id: setForm.activity_type === "custom" ? undefined : toNumber(setForm.exercise_id),
+      activity_name: setForm.activity_type === "custom" ? setForm.activity_name : undefined,
+      reps: setForm.activity_type === "strength" ? toNumber(setForm.reps) : undefined,
+      weight_kg: setForm.activity_type === "strength" ? toNumber(setForm.weight_kg) : undefined,
+      duration_sec: setForm.activity_type === "custom" ? undefined : toNumber(setForm.duration_sec),
+      manual_calories: setForm.activity_type === "custom" ? toNumber(setForm.manual_calories) : undefined,
+    };
+    await api(`/workouts/${activeId}/sets`, { method: "POST", body: JSON.stringify(payload) });
+    setSetForm({ ...setForm, activity_name: "", reps: "", weight_kg: "", manual_calories: "" });
+    refresh();
+  }
   async function updateSet(setId: number) {
     if (!activeId || !editSets[setId]) return;
-    await api(`/workouts/${activeId}/sets/${setId}`, { method: "PATCH", body: JSON.stringify(editSets[setId]) });
+    const draft = editSets[setId];
+    await api(`/workouts/${activeId}/sets/${setId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        activity_type: draft.activity_type,
+        exercise_id: draft.activity_type === "custom" ? undefined : toNumber(draft.exercise_id),
+        activity_name: draft.activity_type === "custom" ? draft.activity_name : undefined,
+        reps: draft.activity_type === "strength" ? toNumber(draft.reps) : undefined,
+        weight_kg: draft.activity_type === "strength" ? toNumber(draft.weight_kg) : undefined,
+        duration_sec: draft.activity_type === "custom" ? undefined : toNumber(draft.duration_sec),
+        manual_calories: draft.activity_type === "custom" ? toNumber(draft.manual_calories) : undefined,
+      })
+    });
     refresh();
   }
   async function removeSet(setId: number) {
@@ -591,28 +723,41 @@ function Workout({ api, user, copy }: { api: <T>(path: string, options?: Request
   }
   function editableSet(item: WorkoutSetRecord) {
     return editSets[item.id] ?? {
-      exercise_id: item.exercise_id,
-      reps: item.reps ?? 0,
-      weight_kg: item.weight_kg ?? 0,
-      duration_sec: item.duration_sec ?? 180
+      activity_type: item.activity_type,
+      exercise_id: String(item.exercise_id ?? ""),
+      activity_name: item.activity_name ?? item.exercise_name,
+      reps: item.reps?.toString() ?? "",
+      weight_kg: item.weight_kg?.toString() ?? "",
+      duration_sec: item.duration_sec?.toString() ?? "180",
+      manual_calories: item.manual_calories?.toString() ?? item.computed_burn_kcal.toString()
     };
   }
-  function updateEditableSet(setId: number, value: { exercise_id: number; reps: number; weight_kg: number; duration_sec: number }) {
+  function updateEditableSet(setId: number, value: { activity_type: string; exercise_id: string; activity_name: string; reps: string; weight_kg: string; duration_sec: string; manual_calories: string }) {
     setEditSets({ ...editSets, [setId]: value });
   }
 
   return (
     <section>
-      <header className="page-head"><h2>{copy.workout}</h2><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></header>
+      <header className="page-head">
+        <div>
+          <h2>{copy.workout}</h2>
+          <p>{copy.workoutSubtitle}</p>
+        </div>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </header>
       <CalorieSummary user={user} caloriesIn={log.totals.calories ?? 0} caloriesOut={workoutCaloriesOut(workouts)} copy={copy} />
       <div className="grid">
         <div className="panel">
           <h3>{copy.sessions}</h3>
           <button onClick={createWorkout}><Plus size={18} /> {copy.startWorkout}</button>
           <p className="hint">{activeWorkout ? `${copy.selected}: ${activeWorkout.notes || `Workout #${activeWorkout.id}`}` : copy.startOrSelectSession}</p>
-          <div className="list">
-            {workouts.map((w) => <button className={activeId === w.id ? "list-item selected-row" : "list-item"} key={w.id} onClick={() => selectWorkout(w)}>{w.notes || `Workout #${w.id}`}<span>{w.sets.length} sets · {Math.round(workoutCaloriesOut([w]))} kcal out</span></button>)}
-          </div>
+          {workouts.length === 0 ? (
+            <EmptyState title={copy.noSessions} body={copy.noSessionsHint} />
+          ) : (
+            <div className="list">
+              {workouts.map((w) => <button className={activeId === w.id ? "list-item selected-row" : "list-item"} key={w.id} onClick={() => selectWorkout(w)}>{w.notes || `Workout #${w.id}`}<span>{w.sets.length} sets · {Math.round(workoutCaloriesOut([w]))} kcal out</span></button>)}
+            </div>
+          )}
         </div>
         <form className="panel" onSubmit={renameWorkout}>
           <h3>{copy.selectedSession}</h3>
@@ -622,29 +767,61 @@ function Workout({ api, user, copy }: { api: <T>(path: string, options?: Request
             <input value={sessionName} onChange={(e) => setSessionName(e.target.value)} disabled={!activeId} placeholder={copy.sessionExample} />
           </label>
           <div className="row">
-            <button disabled={!activeId}>{copy.saveName}</button>
-            <button className="danger" type="button" disabled={!activeId} onClick={removeWorkout}>{copy.removeSession}</button>
+            <button disabled={!activeId}><Save size={16} /> {copy.saveName}</button>
+            <button className="danger" type="button" disabled={!activeId} onClick={removeWorkout}><Trash2 size={16} /> {copy.removeSession}</button>
           </div>
         </form>
         <form className="panel" onSubmit={addSet}>
           <h3>{copy.addSet}</h3>
           <p className="hint">{copy.addSetHint}</p>
           <label>
-            {copy.exercise}
-            <select value={setForm.exercise_id} onChange={(e) => setSetForm({ ...setForm, exercise_id: Number(e.target.value) })}>{exercises.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}</select>
+            {copy.activityType}
+            <select value={setForm.activity_type} onChange={(e) => {
+              const nextType = e.target.value;
+              const nextExercise = exercises.find((exercise) => nextType === "cardio" ? exercise.category === "cardio" : exercise.category !== "cardio");
+              setSetForm({ ...setForm, activity_type: nextType, exercise_id: nextExercise ? String(nextExercise.id) : "" });
+            }}>
+              <option value="strength">{copy.strength}</option>
+              <option value="cardio">{copy.cardio}</option>
+              <option value="custom">{copy.customActivity}</option>
+            </select>
           </label>
-          <label>
-            {copy.reps}
-            <input type="number" value={setForm.reps} onChange={(e) => setSetForm({ ...setForm, reps: Number(e.target.value) })} />
-          </label>
-          <label>
-            {copy.weightUsed}
-            <input type="number" value={setForm.weight_kg} onChange={(e) => setSetForm({ ...setForm, weight_kg: Number(e.target.value) })} />
-          </label>
-          <label>
-            {copy.durationSeconds}
-            <input type="number" value={setForm.duration_sec} onChange={(e) => setSetForm({ ...setForm, duration_sec: Number(e.target.value) })} />
-          </label>
+          {setForm.activity_type === "custom" ? (
+            <>
+              <p className="hint">{copy.customActivityHint}</p>
+              <label>
+                {copy.customActivityName}
+                <input value={setForm.activity_name} placeholder="Example: Basketball" onChange={(e) => setSetForm({ ...setForm, activity_name: e.target.value })} />
+              </label>
+              <label>
+                {copy.caloriesBurned}
+                <input type="number" value={setForm.manual_calories} onChange={(e) => setSetForm({ ...setForm, manual_calories: e.target.value })} />
+              </label>
+            </>
+          ) : (
+            <>
+              <label>
+                {copy.exercise}
+                <select value={setForm.exercise_id} onChange={(e) => setSetForm({ ...setForm, exercise_id: e.target.value })}>{selectableExercises.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}</select>
+              </label>
+              {setForm.activity_type === "strength" && (
+                <>
+                  <label>
+                    {copy.reps}
+                    <input type="number" value={setForm.reps} onChange={(e) => setSetForm({ ...setForm, reps: e.target.value })} />
+                  </label>
+                  <label>
+                    {copy.weightUsed}
+                    <input type="number" value={setForm.weight_kg} onChange={(e) => setSetForm({ ...setForm, weight_kg: e.target.value })} />
+                  </label>
+                </>
+              )}
+              <label>
+                {copy.durationSeconds}
+                <input type="number" value={setForm.duration_sec} onChange={(e) => setSetForm({ ...setForm, duration_sec: e.target.value })} />
+              </label>
+            </>
+          )}
           <button disabled={!activeId}>{copy.addSet}</button>
         </form>
       </div>
@@ -658,25 +835,53 @@ function Workout({ api, user, copy }: { api: <T>(path: string, options?: Request
             return (
               <div className="set-editor" key={item.id}>
                 <label>
-                  {copy.exercise}
-                  <select value={draft.exercise_id} onChange={(e) => updateEditableSet(item.id, { ...draft, exercise_id: Number(e.target.value) })}>{exercises.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}</select>
+                  {copy.activityType}
+                  <select value={draft.activity_type} onChange={(e) => updateEditableSet(item.id, { ...draft, activity_type: e.target.value })}>
+                    <option value="strength">{copy.strength}</option>
+                    <option value="cardio">{copy.cardio}</option>
+                    <option value="custom">{copy.customActivity}</option>
+                  </select>
                 </label>
-                <label>
-                  {copy.reps}
-                  <input type="number" value={draft.reps} onChange={(e) => updateEditableSet(item.id, { ...draft, reps: Number(e.target.value) })} />
-                </label>
-                <label>
-                  {copy.weightKg}
-                  <input type="number" value={draft.weight_kg} onChange={(e) => updateEditableSet(item.id, { ...draft, weight_kg: Number(e.target.value) })} />
-                </label>
-                <label>
-                  {copy.durationSeconds}
-                  <input type="number" value={draft.duration_sec} onChange={(e) => updateEditableSet(item.id, { ...draft, duration_sec: Number(e.target.value) })} />
-                </label>
+                {draft.activity_type === "custom" ? (
+                  <>
+                    <label>
+                      {copy.customActivityName}
+                      <input value={draft.activity_name} onChange={(e) => updateEditableSet(item.id, { ...draft, activity_name: e.target.value })} />
+                    </label>
+                    <label>
+                      {copy.caloriesBurned}
+                      <input type="number" value={draft.manual_calories} onChange={(e) => updateEditableSet(item.id, { ...draft, manual_calories: e.target.value })} />
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <label>
+                      {copy.exercise}
+                      <select value={draft.exercise_id} onChange={(e) => updateEditableSet(item.id, { ...draft, exercise_id: e.target.value })}>{exercises.filter((exercise) => draft.activity_type === "cardio" ? exercise.category === "cardio" : exercise.category !== "cardio").map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}</select>
+                    </label>
+                    {draft.activity_type === "strength" && (
+                      <>
+                        <label>
+                          {copy.reps}
+                          <input type="number" value={draft.reps} onChange={(e) => updateEditableSet(item.id, { ...draft, reps: e.target.value })} />
+                        </label>
+                        <label>
+                          {copy.weightKg}
+                          <input type="number" value={draft.weight_kg} onChange={(e) => updateEditableSet(item.id, { ...draft, weight_kg: e.target.value })} />
+                        </label>
+                      </>
+                    )}
+                    <label>
+                      {copy.durationSeconds}
+                      <input type="number" value={draft.duration_sec} onChange={(e) => updateEditableSet(item.id, { ...draft, duration_sec: e.target.value })} />
+                    </label>
+                  </>
+                )}
                 <div className="set-actions">
+                  <span className={`activity-badge badge-${item.activity_type}`}>{copy[item.activity_type as keyof Copy] || item.activity_type}</span>
                   <span>{Math.round(item.computed_burn_kcal)} kcal out</span>
-                  <button className="small" onClick={() => updateSet(item.id)} type="button">{copy.saveSet}</button>
-                  <button className="danger small" onClick={() => removeSet(item.id)} type="button">{copy.remove}</button>
+                  <button className="icon-button" onClick={() => updateSet(item.id)} type="button" aria-label={copy.saveSet} title={copy.saveSet}><Save size={16} /></button>
+                  <button className="danger icon-button" onClick={() => removeSet(item.id)} type="button" aria-label={copy.remove} title={copy.remove}><Trash2 size={16} /></button>
                 </div>
               </div>
             );
@@ -689,13 +894,36 @@ function Workout({ api, user, copy }: { api: <T>(path: string, options?: Request
 
 function Profile({ api, user, setUser, copy }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; user: User; setUser: (user: User) => void; copy: Copy }) {
   const [form, setForm] = useState(user);
+  const [targetMode, setTargetMode] = useState(user.daily_calorie_target ? "manual" : "auto");
+  const [profileError, setProfileError] = useState("");
   async function save(event: React.FormEvent) {
     event.preventDefault();
-    setUser(await api("/me", { method: "PATCH", body: JSON.stringify(form) }));
+    setProfileError("");
+    if (targetMode === "manual" && (!form.daily_calorie_target || form.daily_calorie_target <= 0)) {
+      setProfileError(copy.targetError);
+      return;
+    }
+    if (targetMode === "auto" && !hasAutoTargetInputs(form)) {
+      setProfileError(copy.targetError);
+      return;
+    }
+    const payload = targetMode === "auto" ? { ...form, daily_calorie_target: null } : form;
+    setUser(await api("/me", { method: "PATCH", body: JSON.stringify(payload) }));
+  }
+  async function useAutoTarget() {
+    setProfileError("");
+    if (!hasAutoTargetInputs(form)) {
+      setProfileError(copy.targetError);
+      return;
+    }
+    setTargetMode("auto");
+    const updated = await api<User>("/me", { method: "PATCH", body: JSON.stringify({ ...form, daily_calorie_target: null }) });
+    setUser(updated);
+    setForm(updated);
   }
   return (
     <section>
-      <header className="page-head"><h2>{copy.profile}</h2></header>
+      <header className="page-head"><div><h2>{copy.profile}</h2><p>{copy.profileSubtitle}</p></div></header>
       <form className="panel profile" onSubmit={save}>
         <label>
           {copy.displayName}
@@ -712,15 +940,15 @@ function Profile({ api, user, setUser, copy }: { api: <T>(path: string, options?
         </label>
         <label>
           {copy.age}
-          <input type="number" placeholder="Example: 28" value={form.age ?? ""} onChange={(e) => setForm({ ...form, age: Number(e.target.value) })} />
+          <input type="number" placeholder="Example: 28" value={form.age ?? ""} onChange={(e) => setForm({ ...form, age: toNumber(e.target.value) })} />
         </label>
         <label>
           {copy.heightCm}
-          <input type="number" placeholder="Example: 175" value={form.height_cm ?? ""} onChange={(e) => setForm({ ...form, height_cm: Number(e.target.value) })} />
+          <input type="number" placeholder="Example: 175" value={form.height_cm ?? ""} onChange={(e) => setForm({ ...form, height_cm: toNumber(e.target.value) })} />
         </label>
         <label>
           {copy.weightKg}
-          <input type="number" placeholder="Example: 72" value={form.weight_kg ?? ""} onChange={(e) => setForm({ ...form, weight_kg: Number(e.target.value) })} />
+          <input type="number" placeholder="Example: 72" value={form.weight_kg ?? ""} onChange={(e) => setForm({ ...form, weight_kg: toNumber(e.target.value) })} />
         </label>
         <label>
           {copy.goal}
@@ -731,9 +959,18 @@ function Profile({ api, user, setUser, copy }: { api: <T>(path: string, options?
           </select>
         </label>
         <label>
-          {copy.dailyCalorieTarget}
-          <input type="number" placeholder="Example: 2200" value={form.daily_calorie_target ?? ""} onChange={(e) => setForm({ ...form, daily_calorie_target: Number(e.target.value) })} />
+          {copy.targetMode}
+          <select value={targetMode} onChange={(e) => setTargetMode(e.target.value)}>
+            <option value="manual">{copy.manualTarget}</option>
+            <option value="auto">{copy.autoTarget}</option>
+          </select>
         </label>
+        <label>
+          {copy.dailyCalorieTarget}
+          <input type="number" disabled={targetMode === "auto"} placeholder="Example: 2200" value={targetMode === "auto" ? "" : form.daily_calorie_target ?? ""} onChange={(e) => setForm({ ...form, daily_calorie_target: toNumber(e.target.value) })} />
+        </label>
+        {profileError && <p className="error">{profileError}</p>}
+        <button type="button" className="secondary" onClick={useAutoTarget}>{copy.useAutoTarget}</button>
         <button>{copy.saveProfile}</button>
       </form>
     </section>

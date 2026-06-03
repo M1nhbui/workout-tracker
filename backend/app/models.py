@@ -128,10 +128,13 @@ class WorkoutSet(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     workout_id: Mapped[int] = mapped_column(ForeignKey("workouts.id"))
-    exercise_id: Mapped[int] = mapped_column(ForeignKey("exercises.id"))
+    exercise_id: Mapped[Optional[int]] = mapped_column(ForeignKey("exercises.id"), nullable=True)
+    activity_type: Mapped[str] = mapped_column(String(30), default="strength")
+    activity_name: Mapped[Optional[str]] = mapped_column(String(180), nullable=True)
     reps: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     weight_kg: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     duration_sec: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    manual_calories: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     computed_burn_kcal: Mapped[float] = mapped_column(Float, default=0)
 
     workout: Mapped[Workout] = relationship(back_populates="sets")

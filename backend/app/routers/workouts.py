@@ -15,10 +15,13 @@ def set_out(item: WorkoutSet) -> WorkoutSetOut:
     return WorkoutSetOut(
         id=item.id,
         exercise_id=item.exercise_id,
-        exercise_name=item.exercise.name,
+        exercise_name=item.activity_name or (item.exercise.name if item.exercise else "Custom activity"),
+        activity_type=item.activity_type,
+        activity_name=item.activity_name,
         reps=item.reps,
         weight_kg=item.weight_kg,
         duration_sec=item.duration_sec,
+        manual_calories=item.manual_calories,
         computed_burn_kcal=item.computed_burn_kcal,
     )
 
@@ -73,6 +76,20 @@ def list_workouts(
     return [workout_out(workout) for workout in workouts]
 
 
+def compute_burn(actor: User, exercise: Exercise | None, duration_sec: int | None, manual_calories: float | None) -> float:
+    if manual_calories is not None:
+        return round(max(manual_calories, 0), 1)
+    if not exercise:
+        return 0
+    hours = (duration_sec or 180) / 3600
+    weight = actor.weight_kg or 75
+    return round(exercise.met * weight * hours, 1)
+
+
+def should_use_manual_calories(activity_type: str) -> bool:
+    return activity_type == "custom"
+
+
 @router.patch("/{workout_id}", response_model=WorkoutOut)
 def update_workout(
     workout_id: int,
@@ -120,18 +137,26 @@ def add_set(
         raise HTTPException(status_code=404, detail="Workout not found")
     if not can_access_client(db, actor, workout.client_id):
         raise HTTPException(status_code=403, detail="Cannot edit this workout")
-    exercise = db.get(Exercise, payload.exercise_id)
-    if not exercise:
+    exercise = db.get(Exercise, payload.exercise_id) if payload.exercise_id else None
+    if payload.activity_type != "custom" and not exercise:
         raise HTTPException(status_code=404, detail="Exercise not found")
-    hours = (payload.duration_sec or 180) / 3600
-    weight = actor.weight_kg or 75
-    burn = round(exercise.met * weight * hours, 1)
+    if payload.activity_type == "custom" and payload.manual_calories is None:
+        raise HTTPException(status_code=400, detail="Manual calories are required for custom activities")
+    burn = compute_burn(
+        actor,
+        exercise,
+        payload.duration_sec,
+        payload.manual_calories if should_use_manual_calories(payload.activity_type) else None,
+    )
     item = WorkoutSet(
         workout_id=workout.id,
-        exercise_id=exercise.id,
+        exercise_id=exercise.id if exercise else None,
+        activity_type=payload.activity_type,
+        activity_name=payload.activity_name,
         reps=payload.reps,
         weight_kg=payload.weight_kg,
         duration_sec=payload.duration_sec,
+        manual_calories=payload.manual_calories,
         computed_burn_kcal=burn,
     )
     db.add(item)
@@ -164,16 +189,31 @@ def update_set(
     else:
         exercise = item.exercise
 
+    if payload.activity_type is not None:
+        item.activity_type = payload.activity_type
+    if payload.activity_name is not None:
+        item.activity_name = payload.activity_name
     if payload.reps is not None:
         item.reps = payload.reps
     if payload.weight_kg is not None:
         item.weight_kg = payload.weight_kg
     if payload.duration_sec is not None:
         item.duration_sec = payload.duration_sec
+    if payload.manual_calories is not None:
+        item.manual_calories = payload.manual_calories
 
-    hours = (item.duration_sec or 180) / 3600
-    weight = actor.weight_kg or 75
-    item.computed_burn_kcal = round(exercise.met * weight * hours, 1)
+    if item.activity_type == "custom" and item.manual_calories is None:
+        raise HTTPException(status_code=400, detail="Manual calories are required for custom activities")
+    if item.activity_type != "custom":
+        item.manual_calories = None
+        if not exercise:
+            raise HTTPException(status_code=400, detail="Exercise is required for strength and cardio activities")
+    item.computed_burn_kcal = compute_burn(
+        actor,
+        exercise,
+        item.duration_sec,
+        item.manual_calories if should_use_manual_calories(item.activity_type) else None,
+    )
     db.commit()
     db.refresh(item)
     return set_out(item)

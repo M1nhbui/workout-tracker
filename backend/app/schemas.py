@@ -149,26 +149,35 @@ class WorkoutUpdate(BaseModel):
 
 
 class WorkoutSetCreate(BaseModel):
-    exercise_id: int
+    exercise_id: Optional[int] = None
+    activity_type: str = "strength"
+    activity_name: Optional[str] = None
     reps: Optional[int] = None
     weight_kg: Optional[float] = None
     duration_sec: Optional[int] = None
+    manual_calories: Optional[float] = None
 
 
 class WorkoutSetUpdate(BaseModel):
     exercise_id: Optional[int] = None
+    activity_type: Optional[str] = None
+    activity_name: Optional[str] = None
     reps: Optional[int] = None
     weight_kg: Optional[float] = None
     duration_sec: Optional[int] = None
+    manual_calories: Optional[float] = None
 
 
 class WorkoutSetOut(BaseModel):
     id: int
-    exercise_id: int
+    exercise_id: Optional[int]
     exercise_name: str
+    activity_type: str
+    activity_name: Optional[str]
     reps: Optional[int]
     weight_kg: Optional[float]
     duration_sec: Optional[int]
+    manual_calories: Optional[float]
     computed_burn_kcal: float
 
 

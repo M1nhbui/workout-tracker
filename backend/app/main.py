@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .database import Base, SessionLocal, engine
 from .routers import ai, auth, exercises, foods, me, workouts
+from .schema_runtime import ensure_runtime_schema
 from .seed import seed_reference_data
 
 app = FastAPI(title="Gym & Nutrition API")
@@ -31,6 +32,7 @@ app.include_router(ai.router)
 @app.on_event("startup")
 def startup() -> None:
     Base.metadata.create_all(bind=engine)
+    ensure_runtime_schema(engine)
     db = SessionLocal()
     try:
         seed_reference_data(db)
