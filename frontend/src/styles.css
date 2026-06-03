@@ -86,6 +86,12 @@ nav button,
   justify-content: flex-start;
 }
 
+.language-toggle {
+  background: #eef7f0;
+  color: #173f2b;
+  justify-content: center;
+}
+
 nav button.active {
   background: #2f7a51;
 }
@@ -363,7 +369,8 @@ label {
 
   .sidebar h1,
   .sidebar p,
-  .sidebar .ghost {
+  .sidebar .ghost,
+  .sidebar .language-toggle {
     display: none;
   }
 

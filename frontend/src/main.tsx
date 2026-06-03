@@ -4,6 +4,168 @@ import { Activity, Dumbbell, LogOut, Plus, Search, UserRound, Utensils } from "l
 import "./styles.css";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+type Lang = "en" | "vi";
+
+const text = {
+  en: {
+    appName: "Gym Tracker",
+    today: "Today",
+    workout: "Workout",
+    exercises: "Exercises",
+    profile: "Profile",
+    signOut: "Sign out",
+    createAccount: "Create account",
+    login: "Log in",
+    displayName: "Display name",
+    email: "Email",
+    password: "Password",
+    register: "Register",
+    useExistingAccount: "Use existing account",
+    createAnAccount: "Create an account",
+    dailyTarget: "Daily target",
+    caloriesIn: "Calories in",
+    caloriesOut: "Calories out",
+    remaining: "Remaining",
+    logFoodManually: "Log food manually",
+    manualFoodHint: "Use this when you already know the total calories for what you ate.",
+    meal: "Meal",
+    whatDidYouEat: "What did you eat?",
+    foodExample: "Example: chicken rice bowl",
+    totalCaloriesMeal: "Total calories for this meal",
+    addEntry: "Add entry",
+    foodSearch: "Food search",
+    foodSearchHint: "Search packaged or common foods, then click a result to log it.",
+    searchFoods: "Search foods",
+    saveCustomFood: "Save custom food",
+    customFoodHint: "Use this to create a reusable food. Calories here are per 100 grams, like a nutrition database entry.",
+    foodName: "Food name",
+    brandOptional: "Brand optional",
+    usualServing: "Usual serving g",
+    calories100g: "Calories / 100g",
+    favorite: "Favorite",
+    saveFood: "Save food",
+    loggedMeals: "Logged meals",
+    remove: "Remove",
+    exerciseBrowser: "Exercise Browser",
+    noExercises: "No exercises match that combination yet.",
+    sessions: "Sessions",
+    startWorkout: "Start workout",
+    selected: "Selected",
+    startOrSelectSession: "Start or select a session first.",
+    selectedSession: "Selected session",
+    selectedSessionHint: "Rename the selected session or remove the whole session and all its sets.",
+    sessionName: "Session name",
+    sessionExample: "Example: Push day",
+    saveName: "Save name",
+    removeSession: "Remove session",
+    addSet: "Add set",
+    addSetHint: "Start or select a workout, then enter one exercise set. Duration is used to estimate calories burned.",
+    exercise: "Exercise",
+    reps: "Reps",
+    weightUsed: "Weight used, kg",
+    durationSeconds: "Duration, seconds",
+    setsInSelectedSession: "Sets in selected session",
+    noSessionSelected: "No session selected.",
+    noSetsAdded: "No sets added yet.",
+    weightKg: "Weight, kg",
+    saveSet: "Save set",
+    sex: "Sex",
+    chooseSex: "Choose sex",
+    age: "Age",
+    heightCm: "Height, cm",
+    goal: "Goal",
+    dailyCalorieTarget: "Daily calorie target, kcal",
+    saveProfile: "Save profile",
+    language: "Tiếng Việt",
+    breakfast: "breakfast",
+    lunch: "lunch",
+    dinner: "dinner",
+    snack: "snack",
+    lose: "lose",
+    maintain: "maintain",
+    gain: "gain",
+  },
+  vi: {
+    appName: "Theo Dõi Gym",
+    today: "Hôm nay",
+    workout: "Tập luyện",
+    exercises: "Bài tập",
+    profile: "Hồ sơ",
+    signOut: "Đăng xuất",
+    createAccount: "Tạo tài khoản",
+    login: "Đăng nhập",
+    displayName: "Tên hiển thị",
+    email: "Email",
+    password: "Mật khẩu",
+    register: "Đăng ký",
+    useExistingAccount: "Dùng tài khoản có sẵn",
+    createAnAccount: "Tạo tài khoản mới",
+    dailyTarget: "Mục tiêu ngày",
+    caloriesIn: "Calo nạp vào",
+    caloriesOut: "Calo tiêu hao",
+    remaining: "Calo còn lại",
+    logFoodManually: "Nhập món ăn thủ công",
+    manualFoodHint: "Dùng mục này khi bạn đã biết tổng lượng calo của món đã ăn.",
+    meal: "Bữa ăn",
+    whatDidYouEat: "Bạn đã ăn gì?",
+    foodExample: "Ví dụ: cơm gà",
+    totalCaloriesMeal: "Tổng calo của bữa này",
+    addEntry: "Thêm món",
+    foodSearch: "Tìm món ăn",
+    foodSearchHint: "Tìm thực phẩm đóng gói hoặc món phổ biến, rồi bấm vào kết quả để ghi lại.",
+    searchFoods: "Tìm món ăn",
+    saveCustomFood: "Lưu món tự tạo",
+    customFoodHint: "Dùng để tạo món ăn dùng lại. Calo ở đây tính theo mỗi 100 gram.",
+    foodName: "Tên món",
+    brandOptional: "Thương hiệu nếu có",
+    usualServing: "Khẩu phần thường dùng, g",
+    calories100g: "Calo / 100g",
+    favorite: "Yêu thích",
+    saveFood: "Lưu món",
+    loggedMeals: "Món đã ghi",
+    remove: "Xóa",
+    exerciseBrowser: "Danh sách bài tập",
+    noExercises: "Không có bài tập nào khớp với lựa chọn này.",
+    sessions: "Buổi tập",
+    startWorkout: "Bắt đầu buổi tập",
+    selected: "Đã chọn",
+    startOrSelectSession: "Hãy bắt đầu hoặc chọn một buổi tập trước.",
+    selectedSession: "Buổi tập đang chọn",
+    selectedSessionHint: "Đổi tên buổi tập đang chọn hoặc xóa toàn bộ buổi tập và các set bên trong.",
+    sessionName: "Tên buổi tập",
+    sessionExample: "Ví dụ: Ngày đẩy",
+    saveName: "Lưu tên",
+    removeSession: "Xóa buổi tập",
+    addSet: "Thêm set",
+    addSetHint: "Bắt đầu hoặc chọn một buổi tập, rồi nhập một set. Thời lượng được dùng để ước tính calo tiêu hao.",
+    exercise: "Bài tập",
+    reps: "Số lần",
+    weightUsed: "Mức tạ dùng, kg",
+    durationSeconds: "Thời lượng, giây",
+    setsInSelectedSession: "Set trong buổi đang chọn",
+    noSessionSelected: "Chưa chọn buổi tập.",
+    noSetsAdded: "Chưa có set nào.",
+    weightKg: "Cân nặng, kg",
+    saveSet: "Lưu set",
+    sex: "Giới tính",
+    chooseSex: "Chọn giới tính",
+    age: "Tuổi",
+    heightCm: "Chiều cao, cm",
+    goal: "Mục tiêu",
+    dailyCalorieTarget: "Mục tiêu calo mỗi ngày, kcal",
+    saveProfile: "Lưu hồ sơ",
+    language: "English",
+    breakfast: "bữa sáng",
+    lunch: "bữa trưa",
+    dinner: "bữa tối",
+    snack: "ăn nhẹ",
+    lose: "giảm cân",
+    maintain: "duy trì",
+    gain: "tăng cân",
+  }
+};
+
+type Copy = typeof text.en;
 
 type User = {
   id: number;
@@ -83,6 +245,14 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [tab, setTab] = useState("today");
   const [error, setError] = useState("");
+  const [lang, setLang] = useState<Lang>((localStorage.getItem("gym_lang") as Lang) || "en");
+  const copy = text[lang];
+
+  function toggleLang() {
+    const next = lang === "en" ? "vi" : "en";
+    localStorage.setItem("gym_lang", next);
+    setLang(next);
+  }
 
   const api = useMemo(
     () => async <T,>(path: string, options: RequestInit = {}): Promise<T> => {
@@ -118,35 +288,40 @@ function App() {
   }
 
   if (!token || !user) {
-    return <AuthScreen api={api} onAuth={saveAuth} error={error} setError={setError} />;
+    return <AuthScreen api={api} onAuth={saveAuth} error={error} setError={setError} copy={copy} onToggleLang={toggleLang} />;
   }
 
   return (
     <div className="shell">
       <aside className="sidebar">
         <div>
-          <h1>Gym Tracker</h1>
+          <h1>{copy.appName}</h1>
           <p>{user.display_name}</p>
         </div>
+        <LanguageToggle copy={copy} onToggleLang={toggleLang} />
         <nav>
-          <button className={tab === "today" ? "active" : ""} onClick={() => setTab("today")}><Utensils size={18} /> Today</button>
-          <button className={tab === "workout" ? "active" : ""} onClick={() => setTab("workout")}><Dumbbell size={18} /> Workout</button>
-          <button className={tab === "exercises" ? "active" : ""} onClick={() => setTab("exercises")}><Activity size={18} /> Exercises</button>
-          <button className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}><UserRound size={18} /> Profile</button>
+          <button className={tab === "today" ? "active" : ""} onClick={() => setTab("today")}><Utensils size={18} /> {copy.today}</button>
+          <button className={tab === "workout" ? "active" : ""} onClick={() => setTab("workout")}><Dumbbell size={18} /> {copy.workout}</button>
+          <button className={tab === "exercises" ? "active" : ""} onClick={() => setTab("exercises")}><Activity size={18} /> {copy.exercises}</button>
+          <button className={tab === "profile" ? "active" : ""} onClick={() => setTab("profile")}><UserRound size={18} /> {copy.profile}</button>
         </nav>
-        <button className="ghost" onClick={() => { localStorage.removeItem("gym_token"); setToken(""); setUser(null); }}><LogOut size={18} /> Sign out</button>
+        <button className="ghost" onClick={() => { localStorage.removeItem("gym_token"); setToken(""); setUser(null); }}><LogOut size={18} /> {copy.signOut}</button>
       </aside>
       <main>
-        {tab === "today" && <Today api={api} user={user} />}
-        {tab === "workout" && <Workout api={api} user={user} />}
-        {tab === "exercises" && <ExerciseBrowser api={api} />}
-        {tab === "profile" && <Profile api={api} user={user} setUser={setUser} />}
+        {tab === "today" && <Today api={api} user={user} copy={copy} />}
+        {tab === "workout" && <Workout api={api} user={user} copy={copy} />}
+        {tab === "exercises" && <ExerciseBrowser api={api} copy={copy} />}
+        {tab === "profile" && <Profile api={api} user={user} setUser={setUser} copy={copy} />}
       </main>
     </div>
   );
 }
 
-function AuthScreen({ api, onAuth, error, setError }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; onAuth: (token: string, user: User) => void; error: string; setError: (value: string) => void }) {
+function LanguageToggle({ copy, onToggleLang }: { copy: Copy; onToggleLang: () => void }) {
+  return <button className="language-toggle" type="button" onClick={onToggleLang}>{copy.language}</button>;
+}
+
+function AuthScreen({ api, onAuth, error, setError, copy, onToggleLang }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; onAuth: (token: string, user: User) => void; error: string; setError: (value: string) => void; copy: Copy; onToggleLang: () => void }) {
   const [mode, setMode] = useState<"login" | "register">("register");
   const [form, setForm] = useState({ display_name: "", email: "", password: "" });
 
@@ -165,21 +340,22 @@ function AuthScreen({ api, onAuth, error, setError }: { api: <T>(path: string, o
   return (
     <div className="auth">
       <form className="panel auth-panel" onSubmit={submit}>
-        <h1>{mode === "register" ? "Create account" : "Log in"}</h1>
-        {mode === "register" && <input placeholder="Display name" value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />}
-        <input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <input placeholder="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+        <LanguageToggle copy={copy} onToggleLang={onToggleLang} />
+        <h1>{mode === "register" ? copy.createAccount : copy.login}</h1>
+        {mode === "register" && <input placeholder={copy.displayName} value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />}
+        <input placeholder={copy.email} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <input placeholder={copy.password} type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         {error && <p className="error">{error}</p>}
-        <button>{mode === "register" ? "Register" : "Log in"}</button>
+        <button>{mode === "register" ? copy.register : copy.login}</button>
         <button className="ghost" type="button" onClick={() => setMode(mode === "register" ? "login" : "register")}>
-          {mode === "register" ? "Use existing account" : "Create an account"}
+          {mode === "register" ? copy.useExistingAccount : copy.createAnAccount}
         </button>
       </form>
     </div>
   );
 }
 
-function Today({ api, user }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; user: User }) {
+function Today({ api, user, copy }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; user: User; copy: Copy }) {
   const [date, setDate] = useState(today());
   const [log, setLog] = useState<{ entries: FoodEntry[]; totals: Record<string, number> }>({ entries: [], totals: {} });
   const [workouts, setWorkouts] = useState<WorkoutRecord[]>([]);
@@ -240,74 +416,74 @@ function Today({ api, user }: { api: <T>(path: string, options?: RequestInit) =>
 
   return (
     <section>
-      <header className="page-head"><h2>Today</h2><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></header>
-      <CalorieSummary user={user} caloriesIn={log.totals.calories ?? 0} caloriesOut={workoutCaloriesOut(workouts)} />
+      <header className="page-head"><h2>{copy.today}</h2><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></header>
+      <CalorieSummary user={user} caloriesIn={log.totals.calories ?? 0} caloriesOut={workoutCaloriesOut(workouts)} copy={copy} />
       <div className="grid">
         <form className="panel" onSubmit={addManual}>
-          <h3>Log food manually</h3>
-          <p className="hint">Use this when you already know the total calories for what you ate.</p>
+          <h3>{copy.logFoodManually}</h3>
+          <p className="hint">{copy.manualFoodHint}</p>
           <label>
-            Meal
+            {copy.meal}
             <select value={entry.meal_type} onChange={(e) => setEntry({ ...entry, meal_type: e.target.value })}>
-              <option>breakfast</option><option>lunch</option><option>dinner</option><option>snack</option>
+              <option value="breakfast">{copy.breakfast}</option><option value="lunch">{copy.lunch}</option><option value="dinner">{copy.dinner}</option><option value="snack">{copy.snack}</option>
             </select>
           </label>
           <label>
-            What did you eat?
-            <input placeholder="Example: chicken rice bowl" value={entry.food_name} onChange={(e) => setEntry({ ...entry, food_name: e.target.value })} />
+            {copy.whatDidYouEat}
+            <input placeholder={copy.foodExample} value={entry.food_name} onChange={(e) => setEntry({ ...entry, food_name: e.target.value })} />
           </label>
           <label>
-            Total calories for this meal
+            {copy.totalCaloriesMeal}
             <input type="number" placeholder="Example: 650" value={entry.manual_calories} onChange={(e) => setEntry({ ...entry, manual_calories: Number(e.target.value) })} />
           </label>
-          <button><Plus size={18} /> Add entry</button>
+          <button><Plus size={18} /> {copy.addEntry}</button>
         </form>
         <div className="panel">
-          <h3>Food search</h3>
-          <p className="hint">Search packaged or common foods, then click a result to log it.</p>
-          <div className="row"><input placeholder="Search foods" value={q} onChange={(e) => setQ(e.target.value)} /><button onClick={search}><Search size={18} /></button></div>
+          <h3>{copy.foodSearch}</h3>
+          <p className="hint">{copy.foodSearchHint}</p>
+          <div className="row"><input placeholder={copy.searchFoods} value={q} onChange={(e) => setQ(e.target.value)} /><button onClick={search}><Search size={18} /></button></div>
           <div className="list">
             {foods.map((food, index) => <button className="list-item" key={`${food.name}-${index}`} onClick={() => addFromFood(food)}>{food.name}<span>{Math.round(food.calories_per_100g)} kcal / 100g</span></button>)}
           </div>
         </div>
       </div>
       <form className="panel" onSubmit={saveCustomFood}>
-        <h3>Save custom food</h3>
-        <p className="hint">Use this to create a reusable food. Calories here are per 100 grams, like a nutrition database entry.</p>
+        <h3>{copy.saveCustomFood}</h3>
+        <p className="hint">{copy.customFoodHint}</p>
         <div className="two">
           <label>
-            Food name
+            {copy.foodName}
             <input placeholder="Example: homemade chicken curry" value={customFood.name} onChange={(e) => setCustomFood({ ...customFood, name: e.target.value })} />
           </label>
           <label>
-            Brand optional
+            {copy.brandOptional}
             <input placeholder="Example: homemade" value={customFood.brand} onChange={(e) => setCustomFood({ ...customFood, brand: e.target.value })} />
           </label>
         </div>
         <div className="five">
           <label>
-            Usual serving g
+            {copy.usualServing}
             <input type="number" placeholder="100" value={customFood.serving_grams} onChange={(e) => setCustomFood({ ...customFood, serving_grams: Number(e.target.value) })} />
           </label>
           <label>
-            Calories / 100g
+            {copy.calories100g}
             <input type="number" placeholder="180" value={customFood.calories_per_100g} onChange={(e) => setCustomFood({ ...customFood, calories_per_100g: Number(e.target.value) })} />
           </label>
         </div>
-        <label className="inline-check"><input type="checkbox" checked={customFood.is_favorite} onChange={(e) => setCustomFood({ ...customFood, is_favorite: e.target.checked })} /> Favorite</label>
-        <button>Save food</button>
+        <label className="inline-check"><input type="checkbox" checked={customFood.is_favorite} onChange={(e) => setCustomFood({ ...customFood, is_favorite: e.target.checked })} /> {copy.favorite}</label>
+        <button>{copy.saveFood}</button>
       </form>
       <div className="panel">
-        <h3>Logged meals</h3>
+        <h3>{copy.loggedMeals}</h3>
         <div className="list">
           {log.entries.map((item) => (
             <div className="list-item" key={item.id}>
               <span className="meal-name">
                 {item.food_name}
-                <small>{item.meal_type}</small>
+                <small>{copy[item.meal_type as keyof Copy] || item.meal_type}</small>
               </span>
               <span>{item.computed_calories} kcal</span>
-              <button className="danger small" onClick={() => removeEntry(item.id)}>Remove</button>
+              <button className="danger small" onClick={() => removeEntry(item.id)}>{copy.remove}</button>
             </div>
           ))}
         </div>
@@ -320,15 +496,15 @@ function workoutCaloriesOut(workouts: WorkoutRecord[]) {
   return workouts.reduce((total, workout) => total + workout.sets.reduce((setTotal, item) => setTotal + item.computed_burn_kcal, 0), 0);
 }
 
-function CalorieSummary({ user, caloriesIn, caloriesOut }: { user: User; caloriesIn: number; caloriesOut: number }) {
+function CalorieSummary({ user, caloriesIn, caloriesOut, copy }: { user: User; caloriesIn: number; caloriesOut: number; copy: Copy }) {
   const target = user.daily_calorie_target ?? user.tdee ?? 0;
   const remaining = target ? target - caloriesIn + caloriesOut : 0;
   return (
     <div className="metrics">
-      <Metric label="Daily target" value={target} />
-      <Metric label="Calories in" value={caloriesIn} />
-      <Metric label="Calories out" value={caloriesOut} />
-      <Metric label="Remaining" value={remaining} />
+      <Metric label={copy.dailyTarget} value={target} />
+      <Metric label={copy.caloriesIn} value={caloriesIn} />
+      <Metric label={copy.caloriesOut} value={caloriesOut} />
+      <Metric label={copy.remaining} value={remaining} />
     </div>
   );
 }
@@ -337,7 +513,7 @@ function Metric({ label, value }: { label: string; value: number }) {
   return <div className="metric"><span>{label}</span><strong>{Math.round(value)}</strong><small>kcal</small></div>;
 }
 
-function ExerciseBrowser({ api }: { api: <T>(path: string, options?: RequestInit) => Promise<T> }) {
+function ExerciseBrowser({ api, copy }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; copy: Copy }) {
   const [groups, setGroups] = useState<{ id: number; name: string }[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -347,10 +523,10 @@ function ExerciseBrowser({ api }: { api: <T>(path: string, options?: RequestInit
     setSelected(next);
     setExercises(await api(`/exercises${next.length ? `?muscles=${next.join(",")}` : ""}`));
   }
-  return <section><header className="page-head"><h2>Exercise Browser</h2></header><div className="chips">{groups.map((group) => <button className={selected.includes(group.name) ? "chip selected" : "chip"} onClick={() => toggle(group.name)} key={group.id}>{group.name}</button>)}</div><div className="cards">{exercises.map((exercise) => <article className="panel" key={exercise.id}><h3>{exercise.name}</h3><p>{exercise.equipment} · {exercise.difficulty} · MET {exercise.met}</p><small>{exercise.muscles.join(", ")}</small></article>)}</div>{exercises.length === 0 && <p className="empty">No exercises match that combination yet.</p>}</section>;
+  return <section><header className="page-head"><h2>{copy.exerciseBrowser}</h2></header><div className="chips">{groups.map((group) => <button className={selected.includes(group.name) ? "chip selected" : "chip"} onClick={() => toggle(group.name)} key={group.id}>{group.name}</button>)}</div><div className="cards">{exercises.map((exercise) => <article className="panel" key={exercise.id}><h3>{exercise.name}</h3><p>{exercise.equipment} · {exercise.difficulty} · MET {exercise.met}</p><small>{exercise.muscles.join(", ")}</small></article>)}</div>{exercises.length === 0 && <p className="empty">{copy.noExercises}</p>}</section>;
 }
 
-function Workout({ api, user }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; user: User }) {
+function Workout({ api, user, copy }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; user: User; copy: Copy }) {
   const [date, setDate] = useState(today());
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [workouts, setWorkouts] = useState<WorkoutRecord[]>([]);
@@ -427,80 +603,80 @@ function Workout({ api, user }: { api: <T>(path: string, options?: RequestInit) 
 
   return (
     <section>
-      <header className="page-head"><h2>Workout</h2><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></header>
-      <CalorieSummary user={user} caloriesIn={log.totals.calories ?? 0} caloriesOut={workoutCaloriesOut(workouts)} />
+      <header className="page-head"><h2>{copy.workout}</h2><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></header>
+      <CalorieSummary user={user} caloriesIn={log.totals.calories ?? 0} caloriesOut={workoutCaloriesOut(workouts)} copy={copy} />
       <div className="grid">
         <div className="panel">
-          <h3>Sessions</h3>
-          <button onClick={createWorkout}><Plus size={18} /> Start workout</button>
-          <p className="hint">{activeWorkout ? `Selected: ${activeWorkout.notes || `Workout #${activeWorkout.id}`}` : "Start or select a session first."}</p>
+          <h3>{copy.sessions}</h3>
+          <button onClick={createWorkout}><Plus size={18} /> {copy.startWorkout}</button>
+          <p className="hint">{activeWorkout ? `${copy.selected}: ${activeWorkout.notes || `Workout #${activeWorkout.id}`}` : copy.startOrSelectSession}</p>
           <div className="list">
             {workouts.map((w) => <button className={activeId === w.id ? "list-item selected-row" : "list-item"} key={w.id} onClick={() => selectWorkout(w)}>{w.notes || `Workout #${w.id}`}<span>{w.sets.length} sets · {Math.round(workoutCaloriesOut([w]))} kcal out</span></button>)}
           </div>
         </div>
         <form className="panel" onSubmit={renameWorkout}>
-          <h3>Selected session</h3>
-          <p className="hint">Rename the selected session or remove the whole session and all its sets.</p>
+          <h3>{copy.selectedSession}</h3>
+          <p className="hint">{copy.selectedSessionHint}</p>
           <label>
-            Session name
-            <input value={sessionName} onChange={(e) => setSessionName(e.target.value)} disabled={!activeId} placeholder="Example: Push day" />
+            {copy.sessionName}
+            <input value={sessionName} onChange={(e) => setSessionName(e.target.value)} disabled={!activeId} placeholder={copy.sessionExample} />
           </label>
           <div className="row">
-            <button disabled={!activeId}>Save name</button>
-            <button className="danger" type="button" disabled={!activeId} onClick={removeWorkout}>Remove session</button>
+            <button disabled={!activeId}>{copy.saveName}</button>
+            <button className="danger" type="button" disabled={!activeId} onClick={removeWorkout}>{copy.removeSession}</button>
           </div>
         </form>
         <form className="panel" onSubmit={addSet}>
-          <h3>Add set</h3>
-          <p className="hint">Start or select a workout, then enter one exercise set. Duration is used to estimate calories burned.</p>
+          <h3>{copy.addSet}</h3>
+          <p className="hint">{copy.addSetHint}</p>
           <label>
-            Exercise
+            {copy.exercise}
             <select value={setForm.exercise_id} onChange={(e) => setSetForm({ ...setForm, exercise_id: Number(e.target.value) })}>{exercises.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}</select>
           </label>
           <label>
-            Reps
+            {copy.reps}
             <input type="number" value={setForm.reps} onChange={(e) => setSetForm({ ...setForm, reps: Number(e.target.value) })} />
           </label>
           <label>
-            Weight used, kg
+            {copy.weightUsed}
             <input type="number" value={setForm.weight_kg} onChange={(e) => setSetForm({ ...setForm, weight_kg: Number(e.target.value) })} />
           </label>
           <label>
-            Duration, seconds
+            {copy.durationSeconds}
             <input type="number" value={setForm.duration_sec} onChange={(e) => setSetForm({ ...setForm, duration_sec: Number(e.target.value) })} />
           </label>
-          <button disabled={!activeId}>Add set</button>
+          <button disabled={!activeId}>{copy.addSet}</button>
         </form>
       </div>
       <div className="panel">
-        <h3>Sets in selected session</h3>
-        {!activeWorkout && <p className="hint">No session selected.</p>}
-        {activeWorkout && activeWorkout.sets.length === 0 && <p className="hint">No sets added yet.</p>}
+        <h3>{copy.setsInSelectedSession}</h3>
+        {!activeWorkout && <p className="hint">{copy.noSessionSelected}</p>}
+        {activeWorkout && activeWorkout.sets.length === 0 && <p className="hint">{copy.noSetsAdded}</p>}
         <div className="set-list">
           {activeWorkout?.sets.map((item) => {
             const draft = editableSet(item);
             return (
               <div className="set-editor" key={item.id}>
                 <label>
-                  Exercise
+                  {copy.exercise}
                   <select value={draft.exercise_id} onChange={(e) => updateEditableSet(item.id, { ...draft, exercise_id: Number(e.target.value) })}>{exercises.map((ex) => <option key={ex.id} value={ex.id}>{ex.name}</option>)}</select>
                 </label>
                 <label>
-                  Reps
+                  {copy.reps}
                   <input type="number" value={draft.reps} onChange={(e) => updateEditableSet(item.id, { ...draft, reps: Number(e.target.value) })} />
                 </label>
                 <label>
-                  Weight, kg
+                  {copy.weightKg}
                   <input type="number" value={draft.weight_kg} onChange={(e) => updateEditableSet(item.id, { ...draft, weight_kg: Number(e.target.value) })} />
                 </label>
                 <label>
-                  Duration, seconds
+                  {copy.durationSeconds}
                   <input type="number" value={draft.duration_sec} onChange={(e) => updateEditableSet(item.id, { ...draft, duration_sec: Number(e.target.value) })} />
                 </label>
                 <div className="set-actions">
                   <span>{Math.round(item.computed_burn_kcal)} kcal out</span>
-                  <button className="small" onClick={() => updateSet(item.id)} type="button">Save set</button>
-                  <button className="danger small" onClick={() => removeSet(item.id)} type="button">Remove</button>
+                  <button className="small" onClick={() => updateSet(item.id)} type="button">{copy.saveSet}</button>
+                  <button className="danger small" onClick={() => removeSet(item.id)} type="button">{copy.remove}</button>
                 </div>
               </div>
             );
@@ -511,7 +687,7 @@ function Workout({ api, user }: { api: <T>(path: string, options?: RequestInit) 
   );
 }
 
-function Profile({ api, user, setUser }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; user: User; setUser: (user: User) => void }) {
+function Profile({ api, user, setUser, copy }: { api: <T>(path: string, options?: RequestInit) => Promise<T>; user: User; setUser: (user: User) => void; copy: Copy }) {
   const [form, setForm] = useState(user);
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -519,46 +695,46 @@ function Profile({ api, user, setUser }: { api: <T>(path: string, options?: Requ
   }
   return (
     <section>
-      <header className="page-head"><h2>Profile</h2></header>
+      <header className="page-head"><h2>{copy.profile}</h2></header>
       <form className="panel profile" onSubmit={save}>
         <label>
-          Display name
+          {copy.displayName}
           <input value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
         </label>
         <label>
-          Sex
+          {copy.sex}
           <select value={form.sex ?? ""} onChange={(e) => setForm({ ...form, sex: e.target.value })}>
-            <option value="">Choose sex</option>
+            <option value="">{copy.chooseSex}</option>
             <option value="male">male</option>
             <option value="female">female</option>
             <option value="other">other</option>
           </select>
         </label>
         <label>
-          Age
+          {copy.age}
           <input type="number" placeholder="Example: 28" value={form.age ?? ""} onChange={(e) => setForm({ ...form, age: Number(e.target.value) })} />
         </label>
         <label>
-          Height, cm
+          {copy.heightCm}
           <input type="number" placeholder="Example: 175" value={form.height_cm ?? ""} onChange={(e) => setForm({ ...form, height_cm: Number(e.target.value) })} />
         </label>
         <label>
-          Weight, kg
+          {copy.weightKg}
           <input type="number" placeholder="Example: 72" value={form.weight_kg ?? ""} onChange={(e) => setForm({ ...form, weight_kg: Number(e.target.value) })} />
         </label>
         <label>
-          Goal
+          {copy.goal}
           <select value={form.goal_type} onChange={(e) => setForm({ ...form, goal_type: e.target.value })}>
-            <option value="lose">lose</option>
-            <option value="maintain">maintain</option>
-            <option value="gain">gain</option>
+            <option value="lose">{copy.lose}</option>
+            <option value="maintain">{copy.maintain}</option>
+            <option value="gain">{copy.gain}</option>
           </select>
         </label>
         <label>
-          Daily calorie target, kcal
+          {copy.dailyCalorieTarget}
           <input type="number" placeholder="Example: 2200" value={form.daily_calorie_target ?? ""} onChange={(e) => setForm({ ...form, daily_calorie_target: Number(e.target.value) })} />
         </label>
-        <button>Save profile</button>
+        <button>{copy.saveProfile}</button>
       </form>
     </section>
   );
